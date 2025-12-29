@@ -5,8 +5,6 @@ import {
   EventEmitter,
   HostListener,
   Input,
-  OnInit,
-  OnChanges,
 } from '@angular/core';
 
 @Directive({
@@ -24,6 +22,7 @@ export class ClickOutsideDirective {
   @HostListener('document:pointerdown', ['$event', '$event.target'])
   @HostListener('document:touchstart', ['$event', '$event.target'])
   onClick(event: MouseEvent, targetElement: HTMLElement): void {
+    console.log('clicked outside');
     if (!targetElement || !this.enabled) {
       return;
     }
