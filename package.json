@@ -1,6 +1,6 @@
 {
   "name": "angular-multiselect3",
-  "version": "11.0.3",
+  "version": "11.0.4",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
