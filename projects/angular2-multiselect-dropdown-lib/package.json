@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/ng-packagr/package.schema.json",
-  "name": "@drimer/angular2-multiselect-dropdown",
+  "name": "angular-multiselect",
   "version": "10.0.0",
   "license": "MIT",
   "author": "Pradeep Terli",

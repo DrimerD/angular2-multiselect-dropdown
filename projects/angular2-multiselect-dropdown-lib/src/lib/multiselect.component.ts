@@ -31,7 +31,6 @@ import { DropdownSettings } from './multiselect.interface';
 import { ClickOutsideDirective, ScrollDirective } from './clickOutside';
 import { ListFilterPipe } from './list-filter';
 import { Item, Badge, Search, TemplateRenderer, CIcon } from './menu-item';
-import { DataService } from './multiselect.service';
 import { Subscription, Subject } from 'rxjs';
 import {
   VirtualScrollerModule,
@@ -1045,6 +1044,6 @@ export class AngularMultiSelect
     Search,
     CIcon,
   ],
-  providers: [DataService, ListFilterPipe],
+  providers: [ListFilterPipe],
 })
 export class AngularMultiSelectModule {}

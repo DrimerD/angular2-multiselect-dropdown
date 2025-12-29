@@ -1,6 +1,6 @@
 {
-  "name": "@drimer/angular2-multiselect-dropdown",
-  "version": "11.0.0",
+  "name": "angular-multiselect2",
+  "version": "11.0.2",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -13,7 +13,6 @@
     "github-pages": "ng build --base-href /angular2-multiselect-dropdown/",
     "prepare": "npm run build-package"
   },
-  "private": true,
   "dependencies": {
     "@angular/animations": "^18.1.0",
     "@angular/common": "^18.1.0",
