@@ -28,7 +28,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { MyException } from './multiselect.model';
 import { DropdownSettings } from './multiselect.interface';
-import { ClickOutsideDirective, ScrollDirective } from './clickOutside';
+import { ScrollDirective } from './clickOutside';
 import { ListFilterPipe } from './list-filter';
 import { Item, Badge, Search, TemplateRenderer, CIcon } from './menu-item';
 import { Subscription, Subject } from 'rxjs';
@@ -37,6 +37,7 @@ import {
   VirtualScrollerComponent,
 } from './virtual-scroll/virtual-scroll';
 import { debounceTime, distinctUntilChanged, tap } from 'rxjs/operators';
+import { ClickOutsideService } from './click-outside.service';
 
 export const DROPDOWN_CONTROL_VALUE_ACCESSOR: any = {
   provide: NG_VALUE_ACCESSOR,
@@ -177,7 +178,7 @@ export class AngularMultiSelect
   public dropDownTop: any = '';
   public dropDownBottom: any = 'unset';
   public dropDownLeft: number = 0;
-  public id: any = Math.random().toString(36).substring(2);
+  public id: any = window.crypto.randomUUID();
   defaultSettings: DropdownSettings = {
     singleSelection: false,
     text: 'Select',
@@ -221,6 +222,7 @@ export class AngularMultiSelect
     public _elementRef: ElementRef,
     private cdr: ChangeDetectorRef,
     private filterPipe: ListFilterPipe,
+    private readonly _service: ClickOutsideService,
   ) {
     this.searchTerm$
       .asObservable()
@@ -233,7 +235,9 @@ export class AngularMultiSelect
         this.filterInfiniteList(val);
       });
   }
+
   ngOnInit() {
+    this._service.register(this.id);
     this.settings = Object.assign(this.defaultSettings, this.settings);
 
     this.cachedItems = this.cloneArray(this.data);
@@ -248,6 +252,20 @@ export class AngularMultiSelect
       this.calculateDropdownDirection();
     });
     this.virtualScroollInit = false;
+
+    this.subscription = this._service
+      .onClick()
+      .subscribe((event: MouseEvent) => {
+        if (
+          !event.target ||
+          !this.isActive ||
+          this._elementRef.nativeElement.contains(event.target)
+        ) {
+          return;
+        }
+
+        this.closeDropdownOnClickOut();
+      });
   }
   onKeyUp(evt: any) {
     this.searchTerm$.next((<HTMLInputElement>evt.target).value);
@@ -889,6 +907,8 @@ export class AngularMultiSelect
     if (this.subscription) {
       this.subscription.unsubscribe();
     }
+
+    this._service.unregister(this.id);
   }
   selectGroup(item: any) {
     if (item.disabled) {
@@ -1024,7 +1044,6 @@ export class AngularMultiSelect
   imports: [CommonModule, FormsModule, VirtualScrollerModule],
   declarations: [
     AngularMultiSelect,
-    ClickOutsideDirective,
     ScrollDirective,
     ListFilterPipe,
     Item,
@@ -1035,7 +1054,6 @@ export class AngularMultiSelect
   ],
   exports: [
     AngularMultiSelect,
-    ClickOutsideDirective,
     ScrollDirective,
     ListFilterPipe,
     Item,
@@ -1044,6 +1062,6 @@ export class AngularMultiSelect
     Search,
     CIcon,
   ],
-  providers: [ListFilterPipe],
+  providers: [ListFilterPipe, ClickOutsideService],
 })
 export class AngularMultiSelectModule {}
