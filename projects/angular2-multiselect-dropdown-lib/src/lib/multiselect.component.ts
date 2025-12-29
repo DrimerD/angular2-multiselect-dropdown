@@ -28,7 +28,6 @@ import {
 import { CommonModule } from '@angular/common';
 import { MyException } from './multiselect.model';
 import { DropdownSettings } from './multiselect.interface';
-import { ScrollDirective } from './clickOutside';
 import { ListFilterPipe } from './list-filter';
 import { Item, Badge, Search, TemplateRenderer, CIcon } from './menu-item';
 import { Subscription, Subject } from 'rxjs';
@@ -1044,7 +1043,6 @@ export class AngularMultiSelect
   imports: [CommonModule, FormsModule, VirtualScrollerModule],
   declarations: [
     AngularMultiSelect,
-    ScrollDirective,
     ListFilterPipe,
     Item,
     TemplateRenderer,
@@ -1054,7 +1052,6 @@ export class AngularMultiSelect
   ],
   exports: [
     AngularMultiSelect,
-    ScrollDirective,
     ListFilterPipe,
     Item,
     TemplateRenderer,
