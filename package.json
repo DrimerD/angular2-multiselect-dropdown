@@ -10,7 +10,8 @@
     "e2e": "ng e2e",
     "build-sass": "node-sass --include-path scss projects/angular2-multiselect-dropdown-lib/themes/default.theme.scss projects/angular2-multiselect-dropdown-lib/themes/default.theme.css",
     "build-package": "npm run build-sass && ng-packagr -p projects/angular2-multiselect-dropdown-lib/ng-package.json",
-    "github-pages": "ng build --base-href /angular2-multiselect-dropdown/"
+    "github-pages": "ng build --base-href /angular2-multiselect-dropdown/",
+    "prepare": "npm run build-package"
   },
   "private": true,
   "dependencies": {
