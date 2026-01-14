@@ -424,20 +424,19 @@ export class AngularMultiSelect
     return item[this.settings.primaryKey];
   }
   isSelected(clickedItem: any) {
-    if (clickedItem.disabled) {
+    if (
+      clickedItem.disabled ||
+      !this.selectedItems ||
+      this.selectedItems.length === 0
+    ) {
       return false;
     }
-    let found = false;
-    this.selectedItems &&
-      this.selectedItems.forEach((item) => {
-        if (
-          clickedItem[this.settings.primaryKey] ===
-          item[this.settings.primaryKey]
-        ) {
-          found = true;
-        }
-      });
-    return found;
+
+    return this.selectedItems.some(
+      (item) =>
+        clickedItem[this.settings.primaryKey] ===
+        item[this.settings.primaryKey],
+    );
   }
   addSelected(item: any) {
     if (item.disabled) {
@@ -452,15 +451,17 @@ export class AngularMultiSelect
     this.onTouchedCallback(this.selectedItems);
   }
   removeSelected(clickedItem: any) {
-    this.selectedItems &&
-      this.selectedItems.forEach((item) => {
-        if (
+    if (this.selectedItems) {
+      const position = this.selectedItems.findIndex(
+        (item) =>
           clickedItem[this.settings.primaryKey] ===
-          item[this.settings.primaryKey]
-        ) {
-          this.selectedItems.splice(this.selectedItems.indexOf(item), 1);
-        }
-      });
+          item[this.settings.primaryKey],
+      );
+      if (position !== -1) {
+        this.selectedItems.splice(position, 1);
+      }
+    }
+
     this.onChangeCallback(this.selectedItems);
     this.onTouchedCallback(this.selectedItems);
   }
