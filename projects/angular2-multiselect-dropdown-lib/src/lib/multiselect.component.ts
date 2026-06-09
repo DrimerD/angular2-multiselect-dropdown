@@ -392,9 +392,7 @@ export class AngularMultiSelect
     this.onTouchedCallback = fn;
   }
 
-  trackByFn(index: number, item: any) {
-    return item[this.settings.primaryKey];
-  }
+  trackByFn = (_: number, item: any): any => item[this.settings.primaryKey];
 
   isSelected(clickedItem: any) {
     if (clickedItem.disabled || this._selectedItemsSet.size === 0) {
