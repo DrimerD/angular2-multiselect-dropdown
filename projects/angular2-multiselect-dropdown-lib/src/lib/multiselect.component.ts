@@ -1,7 +1,6 @@
 import {
   Component,
   OnInit,
-  HostListener,
   OnDestroy,
   NgModule,
   SimpleChanges,
@@ -48,7 +47,6 @@ export const DROPDOWN_CONTROL_VALIDATION: any = {
   useExisting: forwardRef(() => AngularMultiSelect),
   multi: true,
 };
-const noop = () => {};
 
 @Component({
   selector: 'angular2-multiselect',
@@ -123,25 +121,6 @@ export class AngularMultiSelect
   @ViewChild('dropdownList', { static: false }) dropdownListElem: ElementRef;
   @ViewChild('cuppaDropdown', { static: false }) cuppaDropdown: ElementRef;
 
-  @HostListener('document:keyup.escape', ['$event'])
-  onEscapeDown(event: KeyboardEvent) {
-    if (this.settings.escapeToClose) {
-      this.closeDropdown();
-    }
-  }
-
-  @HostListener('window:scroll', ['$event'])
-  onScroll(event: any) {
-    if (this.isActive && this.settings.tagToBody) {
-      this.closeDropdown();
-      /*             const elem = this.cuppaDropdown.nativeElement;
-                        if(this.settings.autoPosition){
-                            this.dropDownTop = elem.getBoundingClientRect().y + elem.clientHeight + 1;
-                        }
-                        this.dropDownLeft = elem.getBoundingClientRect().x; */
-    }
-  }
-
   virtualdata: any = [];
   searchTerm$ = new Subject<string>();
 
@@ -152,20 +131,9 @@ export class AngularMultiSelect
   public isInfiniteFilterSelectAll: boolean = false;
   public groupedData: Array<any>;
   filter: any;
-  public chunkArray: any[];
   public scrollTop: any;
-  public chunkIndex: any[] = [];
   public cachedItems: any[] = [];
   public groupCachedItems: any[] = [];
-  public totalRows: any;
-  public itemHeight: any = 41.6;
-  public screenItemsLen: any;
-  public cachedItemsLen: any;
-  public totalHeight: any;
-  public scroller: any;
-  public maxBuffer: any;
-  public lastScrolled: any;
-  public lastRepaintY: any;
   public selectedListHeight: any;
   public filterLength: any = 0;
   public infiniteFilterLength: any = 0;
@@ -210,7 +178,7 @@ export class AngularMultiSelect
     tagToBody: true,
   };
   randomSize: boolean = true;
-  public parseError: boolean;
+
   public filteredList: any = [];
   virtualScroollInit: boolean = false;
   @ViewChild(VirtualScrollerComponent, { static: false })
@@ -235,12 +203,12 @@ export class AngularMultiSelect
       });
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     this._service.register(this.id);
     this.settings = Object.assign(this.defaultSettings, this.settings);
 
     this.cachedItems = this.cloneArray(this.data);
-    if (this.settings.position == 'top') {
+    if (this.settings.position === 'top') {
       setTimeout(() => {
         this.selectedListHeight = { val: 0 };
         this.selectedListHeight.val =
@@ -267,13 +235,13 @@ export class AngularMultiSelect
       });
   }
   onKeyUp(evt: any) {
-    this.searchTerm$.next((<HTMLInputElement>evt.target).value);
+    this.searchTerm$.next((evt.target as HTMLInputElement).value);
   }
   ngOnChanges(changes: SimpleChanges) {
     if (changes.data && !changes.data.firstChange) {
       if (this.settings.groupBy) {
         this.groupedData = this.transformData(this.data, this.settings.groupBy);
-        if (this.data.length == 0) {
+        if (this.data.length === 0) {
           this.selectedItems = [];
         }
         this.groupCachedItems = this.cloneArray(this.groupedData);
@@ -292,31 +260,29 @@ export class AngularMultiSelect
   ngDoCheck() {
     if (this.selectedItems) {
       if (
-        this.selectedItems.length == 0 ||
-        this.data.length == 0 ||
+        this.data.length === 0 ||
+        this.selectedItems.length === 0 ||
         this.selectedItems.length < this.data.length
       ) {
         this.isSelectAll = false;
       }
     }
   }
-  ngAfterViewInit() {
-    if (this.settings.lazyLoading) {
-      // this._elementRef.nativeElement.getElementsByClassName("lazyContainer")[0].addEventListener('scroll', this.onScroll.bind(this));
-    }
-  }
+
+  ngAfterViewInit() {}
+
   ngAfterViewChecked() {
     if (
       this.selectedListElem.nativeElement.clientHeight &&
-      this.settings.position == 'top' &&
+      this.settings.position === 'top' &&
       this.selectedListHeight
     ) {
       this.selectedListHeight.val =
         this.selectedListElem.nativeElement.clientHeight;
       this.cdr.detectChanges();
     }
-    //this.calculateDropdownDirection();
   }
+
   onItemClick(item: any, index: number, evt: Event) {
     if (item.disabled) {
       return;
@@ -326,9 +292,8 @@ export class AngularMultiSelect
       return;
     }
 
-    let found = this.isSelected(item);
-    let limit =
-      this.selectedItems.length < this.settings.limitSelection ? true : false;
+    const found = this.isSelected(item);
+    const limit = this.selectedItems.length < this.settings.limitSelection;
 
     if (!found) {
       if (this.settings.limitSelection) {
@@ -348,9 +313,10 @@ export class AngularMultiSelect
       this.isSelectAll = false;
     }
 
-    if (this.data.length == this.selectedItems.length) {
+    if (this.data.length === this.selectedItems.length) {
       this.isSelectAll = true;
     }
+
     if (this.settings.groupBy) {
       this.updateGroupInfo(item);
     }
@@ -358,8 +324,10 @@ export class AngularMultiSelect
   public validate(c: UntypedFormControl): any {
     return null;
   }
-  private onTouchedCallback: (_: any) => void = noop;
-  private onChangeCallback: (_: any) => void = noop;
+
+  private onTouchedCallback: (_: any) => void = () => {};
+
+  private onChangeCallback: (_: any) => void = () => {};
 
   writeValue(value: any) {
     if (value !== undefined && value !== null && value !== '') {
@@ -411,18 +379,18 @@ export class AngularMultiSelect
     }
   }
 
-  //From ControlValueAccessor interface
   registerOnChange(fn: any) {
     this.onChangeCallback = fn;
   }
 
-  //From ControlValueAccessor interface
   registerOnTouched(fn: any) {
     this.onTouchedCallback = fn;
   }
+
   trackByFn(index: number, item: any) {
     return item[this.settings.primaryKey];
   }
+
   isSelected(clickedItem: any) {
     if (
       clickedItem.disabled ||
@@ -446,7 +414,10 @@ export class AngularMultiSelect
       this.selectedItems = [];
       this.selectedItems.push(item);
       this.closeDropdown();
-    } else this.selectedItems = [...this.selectedItems, item];
+    } else {
+      this.selectedItems = [...this.selectedItems, item];
+    }
+
     this.onChangeCallback(this.selectedItems);
     this.onTouchedCallback(this.selectedItems);
   }
@@ -537,7 +508,6 @@ export class AngularMultiSelect
           obj.selected = !obj.disabled;
         });
       }
-      // this.selectedItems = this.data.slice();
       this.selectedItems = this.data.filter(
         (individualData) => !individualData.disabled,
       );
@@ -568,7 +538,7 @@ export class AngularMultiSelect
     event.stopPropagation();
   }
   filterGroupedList() {
-    if (this.filter == '' || this.filter == null) {
+    if (this.filter === '' || this.filter == null) {
       this.clearSearch();
       return;
     }
@@ -608,13 +578,20 @@ export class AngularMultiSelect
         });
       }
     });
+
+    // added for is select-all
+    this.isFilterSelectAll =
+      this.groupedData.length > 0
+        ? this.groupedData.every((v) =>
+            v.list.every((item) => this.isSelected(item)),
+          )
+        : false;
   }
   toggleFilterSelectAll() {
     if (!this.isFilterSelectAll) {
-      let added = [];
+      const added = [];
       if (this.settings.groupBy) {
         this.groupedData.forEach((item: any) => {
-          item.sele;
           if (item.list) {
             item.list.forEach((el: any) => {
               if (!this.isSelected(el)) {
@@ -644,7 +621,7 @@ export class AngularMultiSelect
       this.isFilterSelectAll = true;
       this.onFilterSelectAll.emit(added);
     } else {
-      let removed = [];
+      const removed = [];
       if (this.settings.groupBy) {
         this.groupedData.forEach((item: any) => {
           if (item.list) {
@@ -702,8 +679,8 @@ export class AngularMultiSelect
     this.searchTerm$.next('');
     this.data = this.cachedItems;
   }
-  onFilterChange(data: any) {
-    if ((this.filter && this.filter == '') || data.length == 0) {
+  onFilterChange(data: any[]) {
+    if ((this.filter && this.filter === '') || data.length === 0) {
       this.isFilterSelectAll = false;
       this.data = this.cachedItems.slice();
     }
@@ -714,20 +691,23 @@ export class AngularMultiSelect
       }
     });
 
-    if (cnt > 0 && this.filterLength == cnt) {
+    // // added for is select-all
+    this.isSelectAll = !this.filter
+      ? data.every((v) => this.isSelected(v))
+      : false;
+
+    if (cnt > 0 && this.filterLength === cnt) {
       this.isFilterSelectAll = true;
-    } else if (cnt > 0 && this.filterLength != cnt) {
+    } else if (cnt > 0 && this.filterLength !== cnt) {
       this.isFilterSelectAll = false;
     }
     this.data = data;
   }
   cloneArray(arr: any) {
-    let i, copy;
-
     if (Array.isArray(arr)) {
       return JSON.parse(JSON.stringify(arr));
     } else if (typeof arr === 'object') {
-      throw 'Cannot clone array containing an object!';
+      throw new Error('Cannot clone array containing an object!');
     } else {
       return arr;
     }
@@ -736,9 +716,11 @@ export class AngularMultiSelect
     if (item.disabled) {
       return;
     }
-    let key = this.settings.groupBy;
+
+    const key = this.settings.groupBy;
     this.groupedData.forEach((obj: any) => {
       let cnt = 0;
+      // tslint:disable-next-line:triple-equals
       if (obj.grpTitle && item[key] == obj[key]) {
         if (obj.list) {
           obj.list.forEach((el: any) => {
@@ -748,14 +730,17 @@ export class AngularMultiSelect
           });
         }
       }
+      // tslint:disable-next-line:triple-equals
       if (obj.list && cnt === obj.list.length && item[key] == obj[key]) {
         obj.selected = true;
-      } else if (obj.list && cnt != obj.list.length && item[key] == obj[key]) {
+        // tslint:disable-next-line:triple-equals
+      } else if (obj.list && cnt !== obj.list.length && item[key] == obj[key]) {
         obj.selected = false;
       }
     });
     this.groupCachedItems.forEach((obj: any) => {
       let cnt = 0;
+      // tslint:disable-next-line:triple-equals
       if (obj.grpTitle && item[key] == obj[key]) {
         if (obj.list) {
           obj.list.forEach((el: any) => {
@@ -765,8 +750,11 @@ export class AngularMultiSelect
           });
         }
       }
+
+      // tslint:disable-next-line:triple-equals
       if (obj.list && cnt === obj.list.length && item[key] == obj[key]) {
         obj.selected = true;
+        // tslint:disable-next-line:triple-equals
       } else if (obj.list && cnt != obj.list.length && item[key] == obj[key]) {
         obj.selected = false;
       }
@@ -783,16 +771,16 @@ export class AngularMultiSelect
     }, {});
     const tempArr: any = [];
     Object.keys(groupedObj).map((x: any) => {
-      let obj: any = {};
-      let disabledChildrens = [];
-      obj['grpTitle'] = true;
+      const obj: any = {};
+      const disabledChildrens = [];
+      obj.grpTitle = true;
       obj[this.settings.labelKey] = x;
       obj[this.settings.groupBy] = x;
-      obj['selected'] = false;
-      obj['list'] = [];
+      obj.selected = false;
+      obj.list = [];
       let cnt = 0;
       groupedObj[x].forEach((item: any) => {
-        item['list'] = [];
+        item.list = [];
         if (item.disabled) {
           this.isDisabledItemPresent = true;
           disabledChildrens.push(item);
@@ -802,14 +790,15 @@ export class AngularMultiSelect
           cnt++;
         }
       });
-      if (cnt == obj.list.length) {
+
+      if (cnt === obj.list.length) {
         obj.selected = true;
       } else {
         obj.selected = false;
       }
 
       // Check if current group item's all childrens are disabled or not
-      obj['disabled'] = disabledChildrens.length === groupedObj[x].length;
+      obj.disabled = disabledChildrens.length === groupedObj[x].length;
       tempArr.push(obj);
       // obj.list.forEach((item: any) => {
       //     tempArr.push(item);
@@ -818,7 +807,7 @@ export class AngularMultiSelect
     return tempArr;
   }
   public filterInfiniteList(evt: any) {
-    let filteredElems: Array<any> = [];
+    const filteredElems: Array<any> = [];
     if (this.settings.groupBy) {
       this.groupedData = this.groupCachedItems.slice();
     } else {
@@ -826,6 +815,9 @@ export class AngularMultiSelect
       this.virtualdata = this.cachedItems.slice();
     }
 
+    // this.isSelectAll;
+
+    // tslint:disable-next-line:triple-equals
     if ((evt != null || evt != '') && !this.settings.groupBy) {
       if (this.settings.searchBy.length > 0) {
         for (let t = 0; t < this.settings.searchBy.length; t++) {
@@ -841,8 +833,9 @@ export class AngularMultiSelect
           });
         }
       } else {
+        // tslint:disable-next-line:space-before-function-paren
         this.virtualdata.filter(function (el: any) {
-          for (let prop in el) {
+          for (const prop in el) {
             if (
               el[prop]
                 .toString()
@@ -859,12 +852,14 @@ export class AngularMultiSelect
       this.virtualdata = filteredElems;
       this.infiniteFilterLength = this.virtualdata.length;
     }
+    // tslint:disable-next-line:triple-equals
     if (evt.toString() != '' && this.settings.groupBy) {
+      // tslint:disable-next-line:space-before-function-paren
       this.groupedData.filter(function (el: any) {
         if (el.hasOwnProperty('grpTitle')) {
           filteredElems.push(el);
         } else {
-          for (let prop in el) {
+          for (const prop in el) {
             if (
               el[prop]
                 .toString()
@@ -880,6 +875,7 @@ export class AngularMultiSelect
       this.groupedData = [];
       this.groupedData = filteredElems;
       this.infiniteFilterLength = this.groupedData.length;
+      // tslint:disable-next-line:triple-equals
     } else if (evt.toString() == '' && this.cachedItems.length > 0) {
       this.virtualdata = [];
       this.virtualdata = this.cachedItems;
@@ -938,16 +934,16 @@ export class AngularMultiSelect
     this.filterPipe.transform(this.data, this.filter, this.settings.searchBy);
   }
   calculateDropdownDirection() {
-    let shouldOpenTowardsTop = this.settings.position == 'top';
     const elem = this.cuppaDropdown.nativeElement;
-    const dropdownWidth = elem.clientWidth;
-    this.dropDownWidth = dropdownWidth;
+    this.dropDownWidth = elem.clientWidth;
     this.dropDownLeft = this.settings.tagToBody
       ? elem.getBoundingClientRect().x
       : 'unset';
+    // tslint:disable-next-line:triple-equals
     if (this.settings.position == 'top' && !this.settings.autoPosition) {
       this.openTowardsTop(true);
     } else if (
+      // tslint:disable-next-line:triple-equals
       this.settings.position == 'bottom' &&
       !this.settings.autoPosition
     ) {
@@ -966,14 +962,6 @@ export class AngularMultiSelect
       } else {
         this.openTowardsTop(false);
       }
-      // Keep preference if there is not enough space on either the top or bottom
-      /* 			if (spaceOnTop || spaceOnBottom) {
-                            if (shouldOpenTowardsTop) {
-                                shouldOpenTowardsTop = spaceOnTop;
-                            } else {
-                                shouldOpenTowardsTop = !spaceOnBottom;
-                            }
-                        } */
     }
   }
   openTowardsTop(value: boolean) {
