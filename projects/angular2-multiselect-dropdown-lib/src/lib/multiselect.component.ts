@@ -47,6 +47,7 @@ export const DROPDOWN_CONTROL_VALIDATION: any = {
   useExisting: forwardRef(() => AngularMultiSelect),
   multi: true,
 };
+const noop = () => {};
 
 @Component({
   selector: 'angular2-multiselect',
@@ -260,6 +261,7 @@ export class AngularMultiSelect
   ngDoCheck() {
     if (this.selectedItems) {
       if (
+        !this.data ||
         this.data.length === 0 ||
         this.selectedItems.length === 0 ||
         this.selectedItems.length < this.data.length
@@ -325,9 +327,10 @@ export class AngularMultiSelect
     return null;
   }
 
-  private onTouchedCallback: (_: any) => void = () => {};
-
-  private onChangeCallback: (_: any) => void = () => {};
+  // tslint:disable-next-line:member-ordering
+  private onTouchedCallback: (_: any) => void = noop;
+  // tslint:disable-next-line:member-ordering
+  private onChangeCallback: (_: any) => void = noop;
 
   writeValue(value: any) {
     if (value !== undefined && value !== null && value !== '') {
@@ -814,8 +817,6 @@ export class AngularMultiSelect
       this.data = this.cachedItems.slice();
       this.virtualdata = this.cachedItems.slice();
     }
-
-    // this.isSelectAll;
 
     // tslint:disable-next-line:triple-equals
     if ((evt != null || evt != '') && !this.settings.groupBy) {
