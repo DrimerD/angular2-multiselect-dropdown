@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { fromEvent, merge, Observable, Subject, Subscription } from 'rxjs';
-import { Inject, Injectable } from '@angular/core';
+import { Inject, Injectable, NgZone } from '@angular/core';
 
 @Injectable()
 export class ClickOutsideService {
@@ -16,6 +16,7 @@ export class ClickOutsideService {
   constructor(
     @Inject(DOCUMENT)
     private readonly _document: Document,
+    private readonly _zone: NgZone,
   ) {}
 
   register(item: string): void {
@@ -44,11 +45,15 @@ export class ClickOutsideService {
       return;
     }
 
-    // listen to touchstart / pointerdown / mousedown and forward events
-    this._docSub = merge(
-      fromEvent<MouseEvent>(this._document.defaultView, 'touchstart'),
-      fromEvent<MouseEvent>(this._document.defaultView, 'pointerdown'),
-    ).subscribe((event: MouseEvent) => this._click$.next(event));
+    // Subscribe outside Angular zone so document-wide pointer events
+    // don't trigger global change detection. Consumers decide when to
+    // re-enter the zone via NgZone.run().
+    this._zone.runOutsideAngular(() => {
+      this._docSub = merge(
+        fromEvent<MouseEvent>(this._document.defaultView, 'touchstart'),
+        fromEvent<MouseEvent>(this._document.defaultView, 'pointerdown'),
+      ).subscribe((event: MouseEvent) => this._click$.next(event));
+    });
   }
 
   private _unsubscribe(): void {

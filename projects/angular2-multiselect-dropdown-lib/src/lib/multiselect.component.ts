@@ -15,6 +15,7 @@ import {
   Output,
   EventEmitter,
   ElementRef,
+  NgZone,
 } from '@angular/core';
 import {
   FormsModule,
@@ -193,6 +194,7 @@ export class AngularMultiSelect
     private cdr: ChangeDetectorRef,
     private filterPipe: ListFilterPipe,
     private readonly _service: ClickOutsideService,
+    private readonly _zone: NgZone,
   ) {
     this.searchTerm$
       .asObservable()
@@ -234,7 +236,9 @@ export class AngularMultiSelect
           return;
         }
 
-        this.closeDropdownOnClickOut();
+        // Service emits outside NgZone — re-enter only when we actually
+        // need to mutate state and trigger change detection.
+        this._zone.run(() => this.closeDropdownOnClickOut());
       });
   }
   onKeyUp(evt: any) {
