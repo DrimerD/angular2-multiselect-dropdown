@@ -699,7 +699,7 @@ export class AngularMultiSelect
   }
   cloneArray(arr: any) {
     if (Array.isArray(arr)) {
-      return JSON.parse(JSON.stringify(arr));
+      return structuredClone(arr);
     } else if (typeof arr === 'object') {
       throw new Error('Cannot clone array containing an object!');
     } else {
