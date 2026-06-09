@@ -186,6 +186,8 @@ export class AngularMultiSelect
   private virtualScroller: VirtualScrollerComponent;
   public isDisabledItemPresent = false;
 
+  private _selectedItemsSet = new Set<unknown>([]);
+
   constructor(
     public _elementRef: ElementRef,
     private cdr: ChangeDetectorRef,
@@ -243,7 +245,7 @@ export class AngularMultiSelect
       if (this.settings.groupBy) {
         this.groupedData = this.transformData(this.data, this.settings.groupBy);
         if (this.data.length === 0) {
-          this.selectedItems = [];
+          this._resetSelected();
         }
         this.groupCachedItems = this.cloneArray(this.groupedData);
       }
@@ -259,15 +261,17 @@ export class AngularMultiSelect
     }
   }
   ngDoCheck() {
-    if (this.selectedItems) {
-      if (
-        !this.data ||
-        this.data.length === 0 ||
-        this.selectedItems.length === 0 ||
-        this.selectedItems.length < this.data.length
-      ) {
-        this.isSelectAll = false;
-      }
+    if (!this.selectedItems) {
+      return;
+    }
+
+    if (
+      !this.data ||
+      this.data.length === 0 ||
+      this.selectedItems.length === 0 ||
+      this.selectedItems.length < this.data.length
+    ) {
+      this.isSelectAll = false;
     }
   }
 
@@ -341,16 +345,13 @@ export class AngularMultiSelect
             this.settings.groupBy,
           );
           this.groupCachedItems = this.cloneArray(this.groupedData);
-          this.selectedItems = [value[0]];
+          this._setSelected(value.length ? [value[0]] : value);
         } else {
           try {
             if (value.length > 1) {
-              this.selectedItems = [value[0]];
-              throw new MyException(404, {
-                msg: 'Single Selection Mode, Selected Items cannot have more than one item.',
-              });
+              this._setSelected([value[0]]);
             } else {
-              this.selectedItems = value;
+              this._setSelected(value);
             }
           } catch (e) {
             console.error(e.body.msg);
@@ -358,10 +359,11 @@ export class AngularMultiSelect
         }
       } else {
         if (this.settings.limitSelection) {
-          this.selectedItems = value.slice(0, this.settings.limitSelection);
+          this._setSelected(value.slice(0, this.settings.limitSelection));
         } else {
-          this.selectedItems = value;
+          this._setSelected(value);
         }
+
         if (
           this.selectedItems != null &&
           this.selectedItems.length === this.data.length &&
@@ -378,7 +380,7 @@ export class AngularMultiSelect
         }
       }
     } else {
-      this.selectedItems = [];
+      this._resetSelected();
     }
   }
 
@@ -395,30 +397,22 @@ export class AngularMultiSelect
   }
 
   isSelected(clickedItem: any) {
-    if (
-      clickedItem.disabled ||
-      !this.selectedItems ||
-      this.selectedItems.length === 0
-    ) {
+    if (clickedItem.disabled || this._selectedItemsSet.size === 0) {
       return false;
     }
 
-    return this.selectedItems.some(
-      (item) =>
-        clickedItem[this.settings.primaryKey] ===
-        item[this.settings.primaryKey],
-    );
+    return this._selectedItemsSet.has(clickedItem[this.settings.primaryKey]);
   }
   addSelected(item: any) {
     if (item.disabled) {
       return;
     }
     if (this.settings.singleSelection) {
-      this.selectedItems = [];
-      this.selectedItems.push(item);
+      this._setSelected([item]);
       this.closeDropdown();
     } else {
       this.selectedItems = [...this.selectedItems, item];
+      this._selectedItemsSet.add(item[this.settings.primaryKey]);
     }
 
     this.onChangeCallback(this.selectedItems);
@@ -426,12 +420,13 @@ export class AngularMultiSelect
   }
   removeSelected(clickedItem: any) {
     if (this.selectedItems) {
+      const clickedPrimary = clickedItem[this.settings.primaryKey];
+
       const position = this.selectedItems.findIndex(
-        (item) =>
-          clickedItem[this.settings.primaryKey] ===
-          item[this.settings.primaryKey],
+        (item) => clickedPrimary === item[this.settings.primaryKey],
       );
       if (position !== -1) {
+        this._selectedItemsSet.delete(clickedPrimary);
         this.selectedItems.splice(position, 1);
       }
     }
@@ -502,7 +497,8 @@ export class AngularMultiSelect
   }
   toggleSelectAll(event) {
     if (!this.isSelectAll) {
-      this.selectedItems = [];
+      this._resetSelected();
+
       if (this.settings.groupBy) {
         this.groupedData.forEach((obj) => {
           obj.selected = !obj.disabled;
@@ -511,9 +507,11 @@ export class AngularMultiSelect
           obj.selected = !obj.disabled;
         });
       }
-      this.selectedItems = this.data.filter(
-        (individualData) => !individualData.disabled,
+
+      this._setSelected(
+        this.data.filter((individualData) => !individualData.disabled),
       );
+
       this.isSelectAll = true;
       this.onChangeCallback(this.selectedItems);
       this.onTouchedCallback(this.selectedItems);
@@ -528,7 +526,7 @@ export class AngularMultiSelect
           obj.selected = false;
         });
       }
-      this.selectedItems = [];
+      this._resetSelected();
       this.isSelectAll = false;
       this.onChangeCallback(this.selectedItems);
       this.onTouchedCallback(this.selectedItems);
@@ -992,7 +990,7 @@ export class AngularMultiSelect
       });
     }
     this.clearSearch();
-    this.selectedItems = [];
+    this._resetSelected();
     this.isSelectAll = false;
     this.onChangeCallback(this.selectedItems);
     this.onTouchedCallback(this.selectedItems);
@@ -1017,6 +1015,21 @@ export class AngularMultiSelect
       this.filterLength = len;
     }
     this.onFilterChange(this.filteredList);
+  }
+
+  private _resetSelected(): void {
+    this._selectedItemsSet.clear();
+    this.selectedItems = [];
+  }
+
+  private _setSelected(value: any[]): void {
+    this._selectedItemsSet.clear();
+
+    value.forEach((v) => {
+      this._selectedItemsSet.add(v[this.settings.primaryKey]);
+    });
+
+    this.selectedItems = value;
   }
 }
 
