@@ -545,38 +545,29 @@ export class AngularMultiSelect
       this.clearSearch();
       return;
     }
+
+    const filterTerm = this.filter.toLowerCase();
+
     this.groupedData = this.cloneArray(this.groupCachedItems);
     this.groupedData = this.groupedData.filter((obj) => {
       let arr = [];
-      if (
-        obj[this.settings.labelKey]
-          .toLowerCase()
-          .indexOf(this.filter.toLowerCase()) > -1
-      ) {
+      if (obj[this.settings.labelKey].toLowerCase().indexOf(filterTerm) > -1) {
         arr = obj.list;
       } else {
         arr = obj.list.filter((t) => {
           return (
-            t[this.settings.labelKey]
-              .toLowerCase()
-              .indexOf(this.filter.toLowerCase()) > -1
+            t[this.settings.labelKey].toLowerCase().indexOf(filterTerm) > -1
           );
         });
       }
 
       obj.list = arr;
-      if (
-        obj[this.settings.labelKey]
-          .toLowerCase()
-          .indexOf(this.filter.toLowerCase()) > -1
-      ) {
+      if (obj[this.settings.labelKey].toLowerCase().indexOf(filterTerm) > -1) {
         return arr;
       } else {
         return arr.some((cat) => {
           return (
-            cat[this.settings.labelKey]
-              .toLowerCase()
-              .indexOf(this.filter.toLowerCase()) > -1
+            cat[this.settings.labelKey].toLowerCase().indexOf(filterTerm) > -1
           );
         });
       }
