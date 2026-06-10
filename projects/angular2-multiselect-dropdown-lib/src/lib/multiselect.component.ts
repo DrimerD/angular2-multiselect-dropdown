@@ -26,7 +26,6 @@ import {
   UntypedFormControl,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { MyException } from './multiselect.model';
 import { DropdownSettings } from './multiselect.interface';
 import { ListFilterPipe } from './list-filter';
 import { Item, Badge, Search, TemplateRenderer, CIcon } from './menu-item';
@@ -142,7 +141,7 @@ export class AngularMultiSelect
   public viewPortItems: any;
   public item: any;
   public dropdownListYOffset: number = 0;
-  subscription: Subscription;
+  subscription = new Subscription();
   public dropDownWidth: number = 0;
   public dropDownTop: any = '';
   public dropDownBottom: any = 'unset';
@@ -196,16 +195,18 @@ export class AngularMultiSelect
     private readonly _service: ClickOutsideService,
     private readonly _zone: NgZone,
   ) {
-    this.searchTerm$
-      .asObservable()
-      .pipe(
-        debounceTime(1000),
-        distinctUntilChanged(),
-        tap((term) => term),
-      )
-      .subscribe((val) => {
-        this.filterInfiniteList(val);
-      });
+    this.subscription.add(
+      this.searchTerm$
+        .asObservable()
+        .pipe(
+          debounceTime(1000),
+          distinctUntilChanged(),
+          tap((term) => term),
+        )
+        .subscribe((val) => {
+          this.filterInfiniteList(val);
+        }),
+    );
   }
 
   ngOnInit(): void {
@@ -225,9 +226,8 @@ export class AngularMultiSelect
     });
     this.virtualScroollInit = false;
 
-    this.subscription = this._service
-      .onClick()
-      .subscribe((event: MouseEvent) => {
+    this.subscription.add(
+      this._service.onClick().subscribe((event: MouseEvent) => {
         if (
           !event.target ||
           !this.isActive ||
@@ -239,7 +239,8 @@ export class AngularMultiSelect
         // Service emits outside NgZone — re-enter only when we actually
         // need to mutate state and trigger change detection.
         this._zone.run(() => this.closeDropdownOnClickOut());
-      });
+      }),
+    );
   }
   onKeyUp(evt: any) {
     this.searchTerm$.next((evt.target as HTMLInputElement).value);
