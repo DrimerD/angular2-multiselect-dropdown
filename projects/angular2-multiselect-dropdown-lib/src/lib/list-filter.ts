@@ -5,8 +5,6 @@ import { Pipe, PipeTransform } from '@angular/core';
   pure: true,
 })
 export class ListFilterPipe implements PipeTransform {
-  public filteredList: any = [];
-
   transform(
     items: any[],
     filter: string | undefined | null,
@@ -18,15 +16,15 @@ export class ListFilterPipe implements PipeTransform {
 
     const filterTerm = filter.toLowerCase();
 
-    this.filteredList = items.filter((item: any) =>
-      this.applyFilter(item, filter, searchBy),
+    return items.filter((item: any) =>
+      this.applyFilter(item, filterTerm, searchBy),
     );
-    return this.filteredList;
   }
 
   applyFilter(item: any, filter: any, searchBy: string[] | undefined): boolean {
     let found = false;
-    if (searchBy.length > 0) {
+
+    if (searchBy && searchBy.length > 0) {
       if (item.grpTitle) {
         found = true;
       } else {
