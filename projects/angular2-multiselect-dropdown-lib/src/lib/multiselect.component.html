@@ -134,6 +134,7 @@
           *ngIf="settings.showCheckbox"
           type="checkbox"
           [checked]="isSelectAll"
+          [indeterminate]="isSelectAllIndeterminate"
           [disabled]="settings.limitSelection == selectedItems?.length"
           [id]="id"
           (change)="toggleSelectAll($event)"
@@ -533,6 +534,7 @@
                   *ngIf="settings.showCheckbox && !settings.singleSelection"
                   type="checkbox"
                   [checked]="item.selected"
+                  [indeterminate]="item.indeterminate"
                   [disabled]="
                     (settings.limitSelection == selectedItems?.length &&
                       !isSelected(item)) ||
@@ -672,6 +674,7 @@
                   *ngIf="settings.showCheckbox && !settings.singleSelection"
                   type="checkbox"
                   [checked]="item.selected"
+                  [indeterminate]="item.indeterminate"
                   [disabled]="
                     (settings.limitSelection == selectedItems?.length &&
                       !isSelected(item)) ||

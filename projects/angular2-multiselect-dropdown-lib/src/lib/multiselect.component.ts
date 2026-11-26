@@ -128,6 +128,7 @@ export class AngularMultiSelect
   public selectedItems: Array<any>;
   public isActive: boolean = false;
   public isSelectAll: boolean = false;
+  public isSelectAllIndeterminate: boolean = false;
   public isFilterSelectAll: boolean = false;
   public isInfiniteFilterSelectAll: boolean = false;
   public groupedData: Array<any>;
@@ -331,6 +332,8 @@ export class AngularMultiSelect
     if (this.settings.groupBy) {
       this.updateGroupInfo(item);
     }
+
+    this.refreshSelectAllState();
   }
   public validate(c: UntypedFormControl): any {
     return null;
@@ -499,48 +502,164 @@ export class AngularMultiSelect
     }
   }
   toggleSelectAll(event) {
-    if (!this.isSelectAll) {
-      this._resetSelected();
+    const visible = this._visibleSelectAllItems();
+    const allSelected =
+      visible.length > 0 && visible.every((i) => this.isSelected(i));
 
-      if (this.settings.groupBy) {
-        this.groupedData.forEach((obj) => {
-          obj.selected = !obj.disabled;
-        });
-        this.groupCachedItems.forEach((obj) => {
-          obj.selected = !obj.disabled;
-        });
-      }
-
-      this._setSelected(
-        this.data.filter((individualData) => !individualData.disabled),
-      );
-
-      this.isSelectAll = true;
-      this.onChangeCallback(this.selectedItems);
-      this.onTouchedCallback(this.selectedItems);
-
+    if (!allSelected) {
+      visible.forEach((item) => {
+        if (!this.isSelected(item)) {
+          this.selectedItems = [...this.selectedItems, item];
+          this._selectedItemsSet.add(item[this.settings.primaryKey]);
+        }
+      });
       this.onSelectAll.emit(this.selectedItems);
     } else {
-      if (this.settings.groupBy) {
-        this.groupedData.forEach((obj) => {
-          obj.selected = false;
-        });
-        this.groupCachedItems.forEach((obj) => {
-          obj.selected = false;
-        });
-      }
-      this._resetSelected();
-      this.isSelectAll = false;
-      this.onChangeCallback(this.selectedItems);
-      this.onTouchedCallback(this.selectedItems);
-
+      visible.forEach((item) => {
+        if (this.isSelected(item)) {
+          this._selectedItemsSet.delete(item[this.settings.primaryKey]);
+          const pos = this.selectedItems.findIndex(
+            (s) =>
+              s[this.settings.primaryKey] === item[this.settings.primaryKey],
+          );
+          if (pos !== -1) {
+            this.selectedItems.splice(pos, 1);
+          }
+        }
+      });
       this.onDeSelectAll.emit(this.selectedItems);
     }
+
+    if (this.settings.groupBy) {
+      (this.groupedData || []).forEach((g) => this.updateGroupInfo(g));
+    }
+
+    this.onChangeCallback(this.selectedItems);
+    this.onTouchedCallback(this.selectedItems);
+    this.refreshSelectAllState();
+
     setTimeout(() => {
       this.calculateDropdownDirection();
     });
     event.stopPropagation();
   }
+  private _visibleSelectAllItems(): any[] {
+    if (this.settings.groupBy) {
+      const groups = this.settings.lazyLoading
+        ? this.virtualdata
+        : this.groupedData;
+      const items = (groups || []).reduce(
+        (acc, g) => acc.concat(g && g.list ? g.list : [g]),
+        [],
+      );
+      return items.filter((i) => i && !i.grpTitle && !i.disabled);
+    }
+
+    let source;
+    if (this.settings.lazyLoading && this.filter) {
+      const term = this.filter.toString().toLowerCase();
+      const keys = this.settings.searchBy || [];
+      source = (this.cachedItems || []).filter((el) =>
+        keys.some(
+          (key) =>
+            (el[key] == null ? '' : el[key])
+              .toString()
+              .toLowerCase()
+              .indexOf(term) >= 0,
+        ),
+      );
+    } else {
+      source = this.settings.lazyLoading ? this.virtualdata : this.data;
+    }
+
+    return (source || []).filter((i) => i && !i.disabled);
+  }
+
+  public refreshSelectAllState(): void {
+    const visible = this._visibleSelectAllItems();
+
+    if (!visible.length) {
+      this.isSelectAll = false;
+      this.isSelectAllIndeterminate = false;
+      if (this.settings.lazyLoading) {
+        this._syncSelectAllCheckbox(false, false);
+      }
+      return;
+    }
+
+    const isAllSelected = visible.every((i) => this.isSelected(i));
+    const isAnySelected = visible.some((i) => this.isSelected(i));
+    this.isSelectAll = isAllSelected;
+    this.isSelectAllIndeterminate = isAnySelected && !isAllSelected;
+
+    let headerStates: Array<{
+      checked: boolean;
+      indeterminate: boolean;
+    } | null> = [];
+    if (this.settings.groupBy) {
+      headerStates = (this.groupedData || []).map((g) => {
+        if (!g || !g.list) {
+          return null;
+        }
+        const groupAllSelected =
+          g.list.length > 0 && g.list.every((i) => this.isSelected(i));
+        const groupAnySelected = g.list.some((i) => this.isSelected(i));
+        g.selected = groupAllSelected;
+        g.indeterminate = groupAnySelected && !groupAllSelected;
+        return { checked: g.selected, indeterminate: g.indeterminate };
+      });
+    }
+
+    if (this.settings.lazyLoading) {
+      this._syncSelectAllCheckbox(
+        this.isSelectAll,
+        this.isSelectAllIndeterminate,
+      );
+      if (this.settings.groupBy) {
+        this._syncGroupHeaders(headerStates);
+      }
+    }
+  }
+
+  private _syncSelectAllCheckbox(
+    checked: boolean,
+    indeterminate: boolean,
+  ): void {
+    setTimeout(() => {
+      const cb =
+        this.dropdownListElem &&
+        this.dropdownListElem.nativeElement.querySelector(
+          '.select-all input[type="checkbox"]',
+        );
+      if (cb) {
+        cb.checked = checked;
+        cb.indeterminate = indeterminate;
+      }
+    });
+  }
+
+  private _syncGroupHeaders(
+    states: Array<{ checked: boolean; indeterminate: boolean } | null>,
+  ): void {
+    setTimeout(() => {
+      const headers =
+        this.dropdownListElem &&
+        this.dropdownListElem.nativeElement.querySelectorAll(
+          'li.grp-title > input[type="checkbox"]',
+        );
+      if (!headers) {
+        return;
+      }
+      states.forEach((st, idx) => {
+        const h = headers.item(idx);
+        if (h && st) {
+          h.checked = st.checked;
+          h.indeterminate = st.indeterminate;
+        }
+      });
+    });
+  }
+
   filterGroupedList() {
     if (this.filter === '' || this.filter == null) {
       this.clearSearch();
@@ -581,6 +700,7 @@ export class AngularMultiSelect
             v.list.every((item) => this.isSelected(item)),
           )
         : false;
+    this.refreshSelectAllState();
   }
   toggleFilterSelectAll() {
     if (!this.isFilterSelectAll) {
@@ -673,6 +793,7 @@ export class AngularMultiSelect
     this.isFilterSelectAll = false;
     this.searchTerm$.next('');
     this.data = this.cachedItems;
+    this.refreshSelectAllState();
   }
   onFilterChange(data: any[]) {
     if ((this.filter && this.filter === '') || data.length === 0) {
@@ -697,6 +818,7 @@ export class AngularMultiSelect
       this.isFilterSelectAll = false;
     }
     this.data = data;
+    this.refreshSelectAllState();
   }
   cloneArray(arr: any) {
     if (Array.isArray(arr)) {
@@ -877,6 +999,7 @@ export class AngularMultiSelect
     if (this.virtualScroller) {
       this.virtualScroller.refresh();
     }
+    this.refreshSelectAllState();
   }
   resetInfiniteSearch() {
     this.filter = '';
@@ -886,6 +1009,7 @@ export class AngularMultiSelect
     this.groupedData = this.groupCachedItems;
     this.searchTerm$.next('');
     this.infiniteFilterLength = 0;
+    this.refreshSelectAllState();
   }
   onScrollEnd(e: any) {
     if (e.endIndex === this.data.length - 1 || e.startIndex === 0) {
@@ -921,6 +1045,7 @@ export class AngularMultiSelect
       this.onGroupSelect.emit(item);
       this.updateGroupInfo(item);
     }
+    this.refreshSelectAllState();
   }
   addFilterNewItem() {
     this.onAddFilterNewItem.emit(this.filter);
